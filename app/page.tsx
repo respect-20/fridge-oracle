@@ -1,69 +1,155 @@
-import Image from "next/image";
+'use client'
+
+import {useState} from 'react'
+
+interface RecipeResult {
+  title: string
+  verdict: 'safe' | 'risky'
+  warning: string
+  ingredientsUsed: string[]
+  missing: string[]
+  steps: string[]
+}
 
 export default function Home() {
+  const [pantry, setPantry] = useState('')
+  const [restrictions, setRestrictions] = useState('')
+  const [mood, setMood] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [result, setResult] = useState<RecipeResult | null>(null)
+  const [error, setError] = useState('')
+
+  async function consultOracle(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    setResult(null)
+    try {
+      const res = await fetch('/api/suggest', {
+        method: 'POST',
+        headers: {'content-type': 'application/json'},
+        body: JSON.stringify({pantry, restrictions, mood}),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || 'Something went wrong.')
+      } else {
+        setResult(data.result)
+      }
+    } catch {
+      setError('Could not reach the Oracle. Is the server running?')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main className="flex-1 flex flex-col items-center px-4 py-10 sm:py-16">
+      <div className="w-full max-w-xl">
+        <header className="text-center mb-8">
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">🔮 Fridge Oracle</h1>
+          <p className="mt-2 text-sm opacity-70">
+            Tell it what&apos;s in your kitchen and what you can&apos;t eat. It finds you something safe to cook.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
+          <p className="mt-3 inline-block text-xs rounded-full border border-current/20 px-3 py-1 opacity-70">
+            Runs on a local AI model on this computer — your allergies and what&apos;s in your fridge never leave this machine.
+          </p>
+        </header>
+
+        <form onSubmit={consultOracle} className="flex flex-col gap-4">
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-medium">What&apos;s in your kitchen?</span>
+            <textarea
+              value={pantry}
+              onChange={(e) => setPantry(e.target.value)}
+              required
+              rows={3}
+              placeholder="eggs, rice, half an onion, cheddar, tinned tomatoes..."
+              className="rounded-lg border border-current/20 bg-transparent p-3 text-sm outline-none focus:border-current/50"
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          </label>
+
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-medium">Allergies or restrictions (never crossed)</span>
+            <input
+              value={restrictions}
+              onChange={(e) => setRestrictions(e.target.value)}
+              placeholder="e.g. lactose intolerant, no peanuts, halal"
+              className="rounded-lg border border-current/20 bg-transparent p-3 text-sm outline-none focus:border-current/50"
+            />
+          </label>
+
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-medium">Mood or cuisine (optional)</span>
+            <input
+              value={mood}
+              onChange={(e) => setMood(e.target.value)}
+              placeholder="e.g. something quick, comfort food, spicy"
+              className="rounded-lg border border-current/20 bg-transparent p-3 text-sm outline-none focus:border-current/50"
+            />
+          </label>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="mt-2 rounded-lg bg-foreground text-background font-medium py-3 text-sm disabled:opacity-50"
           >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+            {loading ? 'Consulting the Oracle…' : 'Ask the Oracle'}
+          </button>
+        </form>
+
+        {error && (
+          <div className="mt-6 rounded-lg border border-red-500/40 bg-red-500/10 p-4 text-sm">
+            {error}
+          </div>
+        )}
+
+        {result && (
+          <div className="mt-6 rounded-lg border border-current/20 p-5">
+            <div className="flex items-start justify-between gap-3">
+              <h2 className="text-xl font-semibold">{result.title}</h2>
+              <span
+                className={`shrink-0 text-xs rounded-full px-2 py-1 font-medium ${
+                  result.verdict === 'safe'
+                    ? 'bg-green-500/15 text-green-600 dark:text-green-400'
+                    : 'bg-yellow-500/15 text-yellow-700 dark:text-yellow-400'
+                }`}
+              >
+                {result.verdict === 'safe' ? 'Safe for your restrictions' : 'Needs a double-check'}
+              </span>
+            </div>
+
+            {result.warning && (
+              <p className="mt-2 text-sm opacity-80">{result.warning}</p>
+            )}
+
+            {result.ingredientsUsed.length > 0 && (
+              <div className="mt-4">
+                <h3 className="text-sm font-medium opacity-70">Using what you have</h3>
+                <p className="text-sm mt-1">{result.ingredientsUsed.join(', ')}</p>
+              </div>
+            )}
+
+            {result.missing.length > 0 && (
+              <div className="mt-3">
+                <h3 className="text-sm font-medium opacity-70">You might need to grab</h3>
+                <p className="text-sm mt-1">{result.missing.join(', ')}</p>
+              </div>
+            )}
+
+            {result.steps.length > 0 && (
+              <div className="mt-4">
+                <h3 className="text-sm font-medium opacity-70">Steps</h3>
+                <ol className="mt-1 list-decimal list-inside text-sm space-y-1">
+                  {result.steps.map((step, i) => (
+                    <li key={i}>{step}</li>
+                  ))}
+                </ol>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </main>
+  )
 }

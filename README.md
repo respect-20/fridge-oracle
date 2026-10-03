@@ -1,36 +1,32 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Fridge Oracle
 
-## Getting Started
+Built for Hacktoberfest's "Build for a Friend" challenge.
 
-First, run the development server:
+Tell it what's in your kitchen and what you can't eat — allergies, intolerances, anything — and it suggests one recipe you can actually make, while making sure it never crosses your restrictions.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Why it's local-only
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+This is built around an open-weight model (Google's Gemma 3, 4B) running entirely on your own computer through [Ollama](https://ollama.com). Nothing about your pantry or your health information is sent to any server:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Private.** Allergies and medical restrictions never leave your machine.
+- **Free.** No API key, no per-request cost, no rate limit.
+- **Works offline.** Once the model is downloaded, no internet connection is needed.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Running it
 
-## Learn More
+1. Install [Ollama](https://ollama.com/download) and pull the model:
+   ```bash
+   ollama pull gemma3:4b
+   ```
+2. Make sure Ollama is running (`ollama serve`, or just open the app).
+3. Install dependencies and start the dev server:
+   ```bash
+   npm install
+   npm run dev
+   ```
+4. Open [http://localhost:3000](http://localhost:3000).
 
-To learn more about Next.js, take a look at the following resources:
+## How it works
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `app/page.tsx` — the form: what's in your kitchen, your restrictions, your mood.
+- `app/api/suggest/route.ts` — sends that to a locally running Gemma 3 model over Ollama's HTTP API (`http://localhost:11434`), asks for one recipe as structured JSON, and flags anything it can't fully guarantee is safe for your restrictions as "needs a double-check" rather than guessing.
